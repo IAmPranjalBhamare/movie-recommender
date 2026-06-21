@@ -41,7 +41,6 @@ wheels/
 .DS_Store
 
 # Data files (optional - remove if you want to version control CSV)
-*.csv
 *.pkl
 *.pickle
 
