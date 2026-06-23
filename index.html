@@ -178,6 +178,7 @@
                 onkeypress="handleKeyPress(event)"
             >
             <button id="recommendBtn" onclick="getRecommendations()">Recommend</button>
+            <button id="browseBtn" onclick="browseMovies()" style="background: #764ba2;">Browse</button>
         </div>
 
         <div id="resultsContainer"></div>
@@ -274,9 +275,52 @@
             resultsContainer.innerHTML = `
                 <div class="empty-state">
                     <p>🔍 Enter a movie name and click "Recommend" to get started!</p>
+                    <p style="margin-top: 10px; font-size: 0.95em;">💡 Click "Browse" to see available movies</p>
                 </div>
             `;
         });
+
+        async function browseMovies() {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading movies...
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/movies?page=1&limit=20`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = `
+                        <h2 style="text-align: center; color: #333; margin-bottom: 20px;">
+                            Available Movies (showing ${data.movies.length} of ${data.total})
+                        </h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
+                    `;
+
+                    data.movies.forEach((movie) => {
+                        html += `
+                            <div style="background: #f0f0f0; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center;" 
+                                 onclick="document.getElementById('movieInput').value = '${movie.replace(/'/g, "\\'")}'; getRecommendations();"
+                            >
+                                ${movie}
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                    resultsContainer.innerHTML = html;
+                } else {
+                    resultsContainer.innerHTML = `<div class="error">❌ Error loading movies</div>`;
+                }
+            } catch (error) {
+                resultsContainer.innerHTML = `<div class="error">❌ Connection error</div>`;
+                console.error('Error:', error);
+            }
+        }
     </script>
 </body>
 </html>

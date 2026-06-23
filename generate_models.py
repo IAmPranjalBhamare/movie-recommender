@@ -121,7 +121,9 @@ similarity = cosine_similarity(vectors)  # Returns sparse matrix
 
 # Save models
 print("💾 Saving models...")
-pickle.dump(new_df[['title']].to_dict(), open('movie_dict.pkl', 'wb'))  # Only title mapping
+# Create title-to-index mapping (case-insensitive)
+title_to_index = {title.lower(): idx for idx, title in enumerate(new_df['title'].values)}
+pickle.dump(title_to_index, open('movie_dict.pkl', 'wb'))
 pickle.dump(similarity, open('similarity.pkl', 'wb'))  # Sparse matrix
 pickle.dump(new_df[['movie_id', 'title']].values, open('movies.pkl', 'wb'))  # Lightweight array
 

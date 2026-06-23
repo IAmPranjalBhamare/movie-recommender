@@ -16,9 +16,10 @@ try:
     with open('movie_dict.pkl', 'rb') as f:
         movie_dict = pickle.load(f)  # {'title': {movie_title: index, ...}}
     
-    # Extract title-to-index mapping
-    title_to_idx = movie_dict.get('title', {})
+    # title-to-index mapping (already case-insensitive from generation)
+    title_to_idx = movie_dict
     print(f"Models loaded successfully! ({len(movies_data)} movies)")
+    print(f"Sample movies: {list(title_to_idx.keys())[:5]}")
 except Exception as e:
     print(f"Error loading models: {e}")
     movies_data = None
@@ -29,10 +30,16 @@ def recommend(movie_name, num_recommendations=5):
     """
     Recommend movies based on similarity
     """
-    if movie_name not in title_to_idx:
-        return {"error": f"Movie '{movie_name}' not found in database"}
+    movie_name_lower = movie_name.lower().strip()
     
-    movie_index = title_to_idx[movie_name]
+    if movie_name_lower not in title_to_idx:
+        # Try to find partial matches
+        partial_matches = [m for m in title_to_idx.keys() if movie_name_lower in m]
+        if partial_matches:
+            return {"error": f"Movie '{movie_name}' not found. Did you mean: {', '.join(partial_matches[:3])}?"}
+        return {"error": f"Movie '{movie_name}' not found in database. Please check the spelling."}
+    
+    movie_index = title_to_idx[movie_name_lower]
     distances = similarity[movie_index].toarray().flatten() if hasattr(similarity[movie_index], 'toarray') else similarity[movie_index]
     
     # Get top similar movies (excluding the movie itself at index 0)
@@ -42,7 +49,7 @@ def recommend(movie_name, num_recommendations=5):
     for idx in sorted_indices:
         recommendations.append(str(movies_data[idx][1]))
     
-    return {"movie": movie_name, "recommendations": recommendations}
+    return {"movie": movies_data[movie_index][1], "recommendations": recommendations}
 
 @app.route('/', methods=['GET'])
 def home():
@@ -95,15 +102,21 @@ def get_movies():
     try:
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 10, type=int)
+        search = request.args.get('search', '', type=str).lower()
         
         if limit > 100:
             limit = 100
         
+        # Get all movies
+        movies_list = [str(m[1]) for m in movies_data]
+        
+        # Filter by search if provided
+        if search:
+            movies_list = [m for m in movies_list if search in m.lower()]
+        
+        total = len(movies_list)
         start = (page - 1) * limit
         end = start + limit
-        
-        movies_list = [str(m[1]) for m in movies_data]  # Extract titles from numpy array
-        total = len(movies_list)
         paginated_movies = movies_list[start:end]
         
         return jsonify({
