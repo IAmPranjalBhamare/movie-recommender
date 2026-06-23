@@ -94,7 +94,7 @@ print("🔀 Combining features...")
 movies['tags'] = movies['overview'] + movies['genres'] + movies['keywords'] + movies['cast'] + movies['crew']
 
 # Create dataframe with tags
-new_df = movies[['movie_id', 'title', 'tags']]
+new_df = movies[['movie_id', 'title', 'tags']].copy()
 new_df['tags'] = new_df['tags'].apply(lambda x: " ".join(x))
 new_df['tags'] = new_df['tags'].apply(lambda x: x.lower())
 
@@ -113,17 +113,17 @@ new_df['tags'] = new_df['tags'].apply(stem)
 # Vectorization
 print("🔢 Vectorizing text...")
 cv = CountVectorizer(max_features=5000, stop_words='english')
-vectors = cv.fit_transform(new_df['tags']).toarray()
+vectors = cv.fit_transform(new_df['tags'])  # Keep as sparse matrix
 
 # Calculate similarity
 print("📊 Calculating similarity matrix...")
-similarity = cosine_similarity(vectors)
+similarity = cosine_similarity(vectors)  # Returns sparse matrix
 
 # Save models
 print("💾 Saving models...")
-pickle.dump(new_df.to_dict(), open('movie_dict.pkl', 'wb'))
-pickle.dump(similarity, open('similarity.pkl', 'wb'))
-pickle.dump(new_df[['movie_id', 'title']].to_dict(), open('movies.pkl', 'wb'))
+pickle.dump(new_df[['title']].to_dict(), open('movie_dict.pkl', 'wb'))  # Only title mapping
+pickle.dump(similarity, open('similarity.pkl', 'wb'))  # Sparse matrix
+pickle.dump(new_df[['movie_id', 'title']].values, open('movies.pkl', 'wb'))  # Lightweight array
 
 print("✅ Models generated successfully!")
 print(f"   - Total movies: {len(new_df)}")

@@ -15,6 +15,7 @@ COPY app.py .
 COPY tmdb_5000_movies.csv .
 COPY tmdb_5000_credits.csv .
 COPY generate_models.py .
+COPY gunicorn_config.py .
 
 # Generate model files at build time
 RUN python generate_models.py
@@ -26,5 +27,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "60", "app:app"]
+# Run the application with optimized settings for limited memory
+CMD ["gunicorn", "--config", "gunicorn_config.py", "app:app"]

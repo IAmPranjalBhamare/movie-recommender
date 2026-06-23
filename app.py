@@ -1,6 +1,5 @@
 import pickle
 import numpy as np
-import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
@@ -10,32 +9,37 @@ CORS(app)
 # Load pre-trained models and data
 try:
     with open('movies.pkl', 'rb') as f:
-        movies = pickle.load(f)
+        movies_data = pickle.load(f)  # numpy array of [movie_id, title] pairs
     with open('similarity.pkl', 'rb') as f:
-        similarity = pickle.load(f)
+        similarity = pickle.load(f)  # sparse matrix
     with open('movie_dict.pkl', 'rb') as f:
-        movie_dict = pickle.load(f)
-    print("Models loaded successfully!")
+        movie_dict = pickle.load(f)  # {'title': {movie_title: index, ...}}
+    
+    # Extract title-to-index mapping
+    title_to_idx = movie_dict.get('title', {})
+    print(f"Models loaded successfully! ({len(movies_data)} movies)")
 except Exception as e:
     print(f"Error loading models: {e}")
-    movies = None
+    movies_data = None
     similarity = None
-    movie_dict = None
+    title_to_idx = {}
 
 def recommend(movie_name, num_recommendations=5):
     """
     Recommend movies based on similarity
     """
-    if movie_name not in movie_dict:
+    if movie_name not in title_to_idx:
         return {"error": f"Movie '{movie_name}' not found in database"}
     
-    movie_index = movie_dict[movie_name]
-    distances = similarity[movie_index]
-    movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:num_recommendations+1]
+    movie_index = title_to_idx[movie_name]
+    distances = similarity[movie_index].toarray().flatten() if hasattr(similarity[movie_index], 'toarray') else similarity[movie_index]
+    
+    # Get top similar movies (excluding the movie itself at index 0)
+    sorted_indices = np.argsort(distances)[::-1][1:num_recommendations+1]
     
     recommendations = []
-    for i in movies_list:
-        recommendations.append(movies.iloc[i[0]].title)
+    for idx in sorted_indices:
+        recommendations.append(str(movies_data[idx][1]))
     
     return {"movie": movie_name, "recommendations": recommendations}
 
@@ -92,7 +96,7 @@ def get_movies():
         start = (page - 1) * limit
         end = start + limit
         
-        movies_list = movies['title'].tolist()
+        movies_list = [str(m[1]) for m in movies_data]  # Extract titles from numpy array
         total = len(movies_list)
         paginated_movies = movies_list[start:end]
         
