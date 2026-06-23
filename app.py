@@ -15,6 +15,8 @@ try:
         similarity = pickle.load(f)  # sparse matrix
     with open('movie_dict.pkl', 'rb') as f:
         movie_dict = pickle.load(f)  # {'title': {movie_title: index, ...}}
+    with open('movie_metadata.pkl', 'rb') as f:
+        movie_metadata = pickle.load(f)  # metadata dict with poster, cast, etc
     
     # title-to-index mapping (already case-insensitive from generation)
     title_to_idx = movie_dict
@@ -25,6 +27,7 @@ except Exception as e:
     movies_data = None
     similarity = None
     title_to_idx = {}
+    movie_metadata = {}
 
 def recommend(movie_name, num_recommendations=5):
     """
@@ -125,6 +128,50 @@ def get_movies():
             "limit": limit,
             "movies": paginated_movies
         }), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/movie/<movie_name>', methods=['GET'])
+def get_movie_details(movie_name):
+    """Get detailed information about a specific movie"""
+    try:
+        movie_name_lower = movie_name.lower().strip()
+        
+        if movie_name_lower not in movie_metadata:
+            return jsonify({"error": f"Movie '{movie_name}' not found"}), 404
+        
+        metadata = movie_metadata[movie_name_lower]
+        return jsonify(metadata), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/search', methods=['GET'])
+def search_movies():
+    """Search for movies with autocomplete"""
+    try:
+        query = request.args.get('q', '', type=str).lower().strip()
+        limit = request.args.get('limit', 10, type=int)
+        
+        if not query or len(query) < 2:
+            return jsonify({"results": []}), 200
+        
+        # Find matching movies
+        matches = [title for title in title_to_idx.keys() if query in title][:limit]
+        
+        results = []
+        for title in matches:
+            if title in movie_metadata:
+                meta = movie_metadata[title]
+                results.append({
+                    'title': meta['title'],
+                    'poster_path': meta.get('poster_path'),
+                    'vote_average': meta.get('vote_average', 0),
+                    'genres': meta.get('genres', [])
+                })
+        
+        return jsonify({"results": results}), 200
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500

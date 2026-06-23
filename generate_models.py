@@ -27,7 +27,7 @@ print("🔗 Merging datasets...")
 movies = movies.merge(credits, on='title')
 
 # Select features
-movies = movies[['movie_id', 'title', 'overview', 'genres', 'keywords', 'cast', 'crew']]
+movies = movies[['movie_id', 'title', 'overview', 'genres', 'keywords', 'cast', 'crew', 'vote_average', 'poster_path', 'release_date', 'budget', 'revenue']]
 
 # Clean data
 print("🧹 Cleaning data...")
@@ -78,6 +78,21 @@ movies['keywords'] = movies['keywords'].apply(convert)
 movies['cast'] = movies['cast'].apply(convert3)
 movies['crew'] = movies['crew'].apply(fetch_director)
 
+# Save original metadata before cleaning for display purposes
+print("📸 Preparing metadata...")
+metadata_dict = {}
+for idx, row in movies.iterrows():
+    metadata_dict[row['title'].lower()] = {
+        'title': row['title'],
+        'overview': row['overview'],
+        'poster_path': row['poster_path'] if pd.notna(row['poster_path']) else None,
+        'vote_average': float(row['vote_average']) if pd.notna(row['vote_average']) else 0,
+        'release_date': str(row['release_date']).split()[0] if pd.notna(row['release_date']) else 'N/A',
+        'genres': row['genres'],
+        'cast': row['cast'],
+        'crew': row['crew'],
+    }
+
 # Process overview
 print("📝 Processing overview...")
 movies['overview'] = movies['overview'].apply(lambda x: x.split())
@@ -125,6 +140,7 @@ print("💾 Saving models...")
 title_to_index = {title.lower(): idx for idx, title in enumerate(new_df['title'].values)}
 pickle.dump(title_to_index, open('movie_dict.pkl', 'wb'))
 pickle.dump(similarity, open('similarity.pkl', 'wb'))  # Sparse matrix
+pickle.dump(metadata_dict, open('movie_metadata.pkl', 'wb'))  # Movie metadata with poster, cast, etc
 pickle.dump(new_df[['movie_id', 'title']].values, open('movies.pkl', 'wb'))  # Lightweight array
 
 print("✅ Models generated successfully!")
