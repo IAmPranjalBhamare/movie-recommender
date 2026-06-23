@@ -26,8 +26,14 @@ credits = pd.read_csv('tmdb_5000_credits.csv')
 print("🔗 Merging datasets...")
 movies = movies.merge(credits, on='title')
 
-# Select features
-movies = movies[['movie_id', 'title', 'overview', 'genres', 'keywords', 'cast', 'crew', 'vote_average', 'poster_path', 'release_date', 'budget', 'revenue']]
+# Select features (only columns that exist in the dataset)
+available_columns = ['movie_id', 'title', 'overview', 'genres', 'keywords', 'cast', 'crew']
+# Add optional columns if they exist
+for col in ['vote_average', 'poster_path', 'release_date']:
+    if col in movies.columns:
+        available_columns.append(col)
+
+movies = movies[available_columns]
 
 # Clean data
 print("🧹 Cleaning data...")
@@ -82,12 +88,17 @@ movies['crew'] = movies['crew'].apply(fetch_director)
 print("📸 Preparing metadata...")
 metadata_dict = {}
 for idx, row in movies.iterrows():
+    # Safely get optional columns
+    poster = row['poster_path'] if 'poster_path' in movies.columns and pd.notna(row['poster_path']) else None
+    rating = float(row['vote_average']) if 'vote_average' in movies.columns and pd.notna(row['vote_average']) else 0
+    release = str(row['release_date']).split()[0] if 'release_date' in movies.columns and pd.notna(row['release_date']) else 'N/A'
+    
     metadata_dict[row['title'].lower()] = {
         'title': row['title'],
         'overview': row['overview'],
-        'poster_path': row['poster_path'] if pd.notna(row['poster_path']) else None,
-        'vote_average': float(row['vote_average']) if pd.notna(row['vote_average']) else 0,
-        'release_date': str(row['release_date']).split()[0] if pd.notna(row['release_date']) else 'N/A',
+        'poster_path': poster,
+        'vote_average': rating,
+        'release_date': release,
         'genres': row['genres'],
         'cast': row['cast'],
         'crew': row['crew'],
