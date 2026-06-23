@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import ast
 import pickle
+import requests
+import time
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.stem.porter import PorterStemmer
@@ -17,10 +19,41 @@ print("📦 Generating recommendation model...")
 # Download required NLTK data
 nltk.download('punkt', quiet=True)
 
+# Fetch poster paths from TMDB API
+def fetch_poster_path(movie_id):
+    """Fetch poster_path from TMDB API"""
+    try:
+        # Try without API key first (limited)
+        url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+        # Using a readonly public query which works for basic info
+        response = requests.get(url, timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('poster_path')
+    except Exception as e:
+        pass
+    return None
+
 # Load data
 print("📖 Loading data...")
 movies = pd.read_csv('tmdb_5000_movies.csv')
 credits = pd.read_csv('tmdb_5000_credits.csv')
+
+# Rename id column to movie_id for consistency
+movies.rename(columns={'id': 'movie_id'}, inplace=True)
+
+# Fetch posters from TMDB API
+print("🎬 Fetching movie poster paths...")
+posters = []
+for idx, movie_id in enumerate(movies['movie_id']):
+    if idx % 100 == 0:
+        print(f"  Fetching posters... {idx}/{len(movies)}")
+    poster = fetch_poster_path(movie_id)
+    posters.append(poster)
+    if idx % 10 == 0:
+        time.sleep(0.1)  # Rate limiting
+
+movies['poster_path'] = posters
 
 # Merge datasets
 print("🔗 Merging datasets...")

@@ -674,7 +674,7 @@
                     <i class="fas fa-lightbulb"></i> Recommendations
                 </h3>
                 <div class="recommendations-container">
-                    ${recommendations.recommendations.map(recTitle => createRecommendationCard(recTitle)).join('')}
+                    ${recommendations.recommendations.map(rec => createRecommendationCard(rec)).join('')}
                 </div>
                 ` : ''}
             `;
@@ -682,14 +682,25 @@
             resultsArea.innerHTML = html;
         }
 
-        function createRecommendationCard(movieName) {
+        function createRecommendationCard(rec) {
+            // Handle both string (old format) and object (new format with metadata)
+            const title = typeof rec === 'string' ? rec : rec.title;
+            const posterPath = typeof rec === 'object' ? rec.poster_path : null;
+            const rating = typeof rec === 'object' ? rec.vote_average : 0;
+            const genres = typeof rec === 'object' ? rec.genres : [];
+            
+            const posterUrl = posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null;
+            
             return `
-                <div class="recommendation-card" onclick="selectMovie('${movieName.replace(/'/g, "\\''")}')">
-                    <div class="rec-poster">🎬</div>
+                <div class="recommendation-card" onclick="selectMovie('${title.replace(/'/g, "\\''")}')">
+                    <div class="rec-poster">
+                        ${posterUrl ? `<img src="${posterUrl}" alt="${title}">` : '🎬'}
+                    </div>
                     <div class="rec-info">
-                        <div class="rec-title">${movieName}</div>
+                        <div class="rec-title">${title}</div>
                         <div class="rec-rating">
-                            <i class="fas fa-arrow-right"></i> Click to explore
+                            ${rating > 0 ? `<i class="fas fa-star"></i> ${rating.toFixed(1)}` : '<i class="fas fa-arrow-right"></i> Click'}
+                            ${genres.length > 0 ? ' • ' + genres.slice(0, 1).join(', ') : ''}
                         </div>
                     </div>
                 </div>

@@ -31,7 +31,7 @@ except Exception as e:
 
 def recommend(movie_name, num_recommendations=5):
     """
-    Recommend movies based on similarity
+    Recommend movies based on similarity (with metadata)
     """
     movie_name_lower = movie_name.lower().strip()
     
@@ -50,7 +50,25 @@ def recommend(movie_name, num_recommendations=5):
     
     recommendations = []
     for idx in sorted_indices:
-        recommendations.append(str(movies_data[idx][1]))
+        rec_title = str(movies_data[idx][1])
+        rec_title_lower = rec_title.lower()
+        
+        # Get metadata if available
+        if rec_title_lower in movie_metadata:
+            meta = movie_metadata[rec_title_lower]
+            recommendations.append({
+                "title": rec_title,
+                "poster_path": meta.get("poster_path"),
+                "vote_average": meta.get("vote_average", 0),
+                "genres": meta.get("genres", [])
+            })
+        else:
+            recommendations.append({
+                "title": rec_title,
+                "poster_path": None,
+                "vote_average": 0,
+                "genres": []
+            })
     
     return {"movie": movies_data[movie_index][1], "recommendations": recommendations}
 
