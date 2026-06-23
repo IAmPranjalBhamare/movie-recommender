@@ -1,9 +1,10 @@
 import pickle
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 # Load pre-trained models and data
@@ -45,14 +46,19 @@ def recommend(movie_name, num_recommendations=5):
 
 @app.route('/', methods=['GET'])
 def home():
-    return jsonify({
-        "message": "Movie Recommender System API",
-        "version": "1.0.0",
-        "endpoints": {
-            "/recommend": "POST - Get movie recommendations",
-            "/health": "GET - Check API health"
-        }
-    })
+    """Serve the web UI"""
+    try:
+        return send_file('index.html')
+    except:
+        # Fallback to JSON API info
+        return jsonify({
+            "message": "Movie Recommender System API",
+            "version": "1.0.0",
+            "endpoints": {
+                "/recommend": "POST - Get movie recommendations",
+                "/health": "GET - Check API health"
+            }
+        })
 
 @app.route('/health', methods=['GET'])
 def health():

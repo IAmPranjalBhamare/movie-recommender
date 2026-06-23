@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files and data
 COPY app.py .
+COPY index.html .
 COPY tmdb_5000_movies.csv .
 COPY tmdb_5000_credits.csv .
 COPY generate_models.py .
