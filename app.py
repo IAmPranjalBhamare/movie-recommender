@@ -47,5 +47,10 @@ if st.button('Show Recommendation'):
         with col:
             st.text(names[i])
             st.image(posters[i])
-            with st.expander("Description"):
-                st.write(overviews[i])
+            
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("Movie Descriptions")
+    tabs = st.tabs(names)
+    for i, tab in enumerate(tabs):
+        with tab:
+            st.write(overviews[i])
